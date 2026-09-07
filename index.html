@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rasmus Mobile App — Architecture & Flows</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F3F5F7;
+    --card:#FFFFFF;
+    --shell:#0F0F17;
+    --ink:#171616;
+    --ink-2:#313131;
+    --ink-3:#6E7079;
+    --rule:#D8DCE3;
+    --brand:#09018B;
+    --brand-soft:#C7C6F5;
+
+    --home:#09018B;    --home-bg:#EDEDFB;   /* Home / Rasmus system */
+    --user:#8A38F5;    --user-bg:#F4ECFE;   /* user action            */
+    --decision:#3F4049;--decision-bg:#EAECEF;
+    --live:#B3261E;    --live-bg:#FBE9E8;   /* Live / stream           */
+    --activity:#0E7355;--activity-bg:#E2F1EC;/* Activity / my bids     */
+    --info:#8A5A00;    --info-bg:#FBF3E1;   /* informational pages     */
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  html{background:#171616}
+  body{
+    background:var(--paper);color:var(--ink);
+    font-family:'Figtree',sans-serif;font-size:15px;line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:44px 32px 60px}
+
+  .doc-head{
+    position:relative;overflow:hidden;isolation:isolate;
+    padding:34px 40px 42px;background-color:#020016;
+  }
+  .doc-head::before{
+    content:"";position:absolute;inset:0;z-index:-2;
+    background:
+      radial-gradient(1400px 900px at 100% 0%, #050054 0%, rgba(5,0,84,0) 55%),
+      linear-gradient(160deg,#02001C 0%, #010009 60%, #000000 100%);
+  }
+  .mast-inner{max-width:1120px;margin:0 auto}
+  .mast-logo{display:flex;align-items:center;margin-bottom:28px}
+  .mast-logo .rlogo{height:19px;width:auto;display:block;filter:brightness(0) invert(1)}
+  .eyebrow{font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:#8f8de0;margin-bottom:13px}
+  .doc-head h1{margin:0;color:#fff;font-family:'Syne',sans-serif;font-size:33px;font-weight:700;letter-spacing:-1.3px;line-height:1.14;max-width:640px}
+  .ghost-chip{display:inline-block;margin-top:18px;padding:5px 13px;border-radius:999px;font-size:12px;font-weight:600;color:#B9B7F2;background:rgba(185,183,242,.08);border:1px solid rgba(185,183,242,.22)}
+
+  section{margin-top:40px}
+  .sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:8px}
+  .sec-num{font-size:13px;font-weight:700;color:var(--brand);letter-spacing:.5px}
+  .sec-head h2{margin:0;font-family:'Syne',sans-serif;font-size:22px;font-weight:700;letter-spacing:-.4px;color:var(--ink)}
+  .lede{font-size:15.5px;color:var(--ink-2);max-width:820px;margin:6px 0 0}
+  .lede b{font-weight:700}
+
+  .legend{display:flex;flex-wrap:wrap;gap:16px 22px;margin:14px 0 10px}
+  .legend i{display:flex;align-items:center;gap:8px;font-style:normal;font-size:12.5px;color:var(--ink-2);font-weight:500}
+  .legend .sw{width:17px;height:13px;border-radius:3px;border:1.6px solid;display:inline-block}
+  .legend .sw.dia{transform:rotate(45deg);border-radius:2px}
+  .legend .sw.dash{border-style:dashed}
+
+  .canvas{margin-top:8px;overflow-x:auto;border:1px solid var(--rule);border-radius:14px;background:#fff;padding:6px}
+  .canvas svg{display:block}
+  .scrollhint{font-size:12px;color:var(--ink-3);margin-top:8px;font-weight:500}
+
+  /* mapping table */
+  .tabs{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px;background:#fff;border:1px solid var(--rule);border-radius:14px;overflow:hidden}
+  .tabs th,.tabs td{text-align:left;padding:13px 16px;border-bottom:1px solid #EDEFF3;vertical-align:top}
+  .tabs th{background:#F7F8FA;font-weight:700;font-size:11.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-3)}
+  .tabs td:first-child{font-weight:700;white-space:nowrap}
+  .tabs tr:last-child td{border-bottom:none}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:700;border:1.4px solid}
+  .p-home{color:var(--home);border-color:var(--home);background:var(--home-bg)}
+  .p-user{color:var(--user);border-color:var(--user);background:var(--user-bg)}
+  .p-live{color:var(--live);border-color:var(--live);background:var(--live-bg)}
+  .p-act{color:var(--activity);border-color:var(--activity);background:var(--activity-bg)}
+  .p-info{color:var(--info);border-color:var(--info);background:var(--info-bg)}
+
+  .note-box{margin-top:16px;padding:14px 18px;border-radius:12px;background:var(--info-bg);border:1px solid #E9DDBB;font-size:13.5px;color:#6B531A}
+  .note-box b{color:#5A4614}
+
+  footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--rule);font-size:12.5px;color:var(--ink-3)}
+</style>
+</head>
+<body>
+
+<header class="doc-head">
+  <div class="mast-inner">
+    <div class="mast-logo"><img class="rlogo" src="data:image/png;base64,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" alt="Rasmus"></div>
+    <div class="eyebrow">iOS mobile app</div>
+    <h1>From web to app: architecture &amp; bottom&nbsp;bar</h1>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section style="margin-top:32px">
+    <p class="lede">
+      <b>What this is.</b> We took the paths people actually follow today on the Rasmus mobile site
+      and reorganized them into 5 fixed destinations in a bottom bar, instead of copying the hamburger menu.
+      The idea is simple: not every flow is a tab. Bidding, for example, is something that happens inside
+      a tab, not a tab of its own. Live sits in the bar because the business asks for it, and its main
+      challenge, what to show when there is no stream, is flagged on the map.
+    </p>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">01</span><h2>Navigation flow</h2></div>
+    <div class="legend" id="legend"></div>
+    <div class="canvas"><svg id="flow" role="img" aria-label="Navigation map for the Rasmus app"></svg></div>
+    <div class="scrollhint">5 tabs · scroll horizontally to see the flows inside each →</div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">02</span><h2>How today's hamburger menu maps over</h2></div>
+    <table class="tabs">
+      <thead><tr><th>Current item (web)</th><th>What it really is</th><th>Where it goes in the app</th></tr></thead>
+      <tbody>
+        <tr><td>Home / Auctions</td><td>Active auctions by closing time + featured slider</td><td><span class="pill p-home">Home</span></td></tr>
+        <tr><td>Shop by category</td><td>Category filter (= search)</td><td><span class="pill p-user">Search</span></td></tr>
+        <tr><td>"Find anything" search bar</td><td>Global search</td><td><span class="pill p-user">Search</span></td></tr>
+        <tr><td>Rasmus TV</td><td>The Live (stream) — today buried in the menu</td><td><span class="pill p-live">Live</span></td></tr>
+        <tr><td>Watched items + "what I bid on"</td><td>Per-auction today; raised to global</td><td><span class="pill p-act">Activity</span></td></tr>
+        <tr><td>"Remind me before closing"</td><td>Per-auction closing reminder</td><td><span class="pill p-act">Activity</span></td></tr>
+        <tr><td>Notifications, Personal info, Password</td><td>Account settings</td><td><span class="pill p-info">Profile</span></td></tr>
+        <tr><td>Payment methods, Invoices, Credits</td><td>Payments &amp; purchase history</td><td><span class="pill p-info">Profile</span></td></tr>
+        <tr><td>Sell Real Estate, Sell on Rasmus</td><td>Informational selling pages</td><td><span class="pill p-info">Profile</span></td></tr>
+        <tr><td>Buyers, About, Blog, Support, Help, Contact</td><td>Institutional / help pages</td><td><span class="pill p-info">Profile</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    Rasmus · Architecture document for the iOS mobile app · Strategy phase (before mockups).
+    Colors: blue = Home/system · purple = user action · red = Live/stream ·
+    green = Activity/my bids · amber = informational pages.
+  </footer>
+</div>
+
+<script>
+/* ============================================================
+   NODES
+   kind: start | end | process | decision | success | live | info
+   tab:  home | user | live | activity | info   (for color)
+   ============================================================ */
+const NODES = [
+  {id:"OPEN",  gx:0,  gy:4, kind:"start",   tab:"", label:"Open the app"},
+
+  /* ---- LIVE (row 0) ---- */
+  {id:"LIVE",  gx:1,  gy:0, kind:"live",    tab:"live", label:"LIVE (Rasmus TV): tab with a LIVE badge when there is a stream"},
+  {id:"D_LIVE",gx:2,  gy:0, kind:"decision",tab:"",     label:"Any Live right now?"},
+  {id:"STREAM",gx:3,  gy:0, kind:"live",    tab:"live", label:"Watch stream: video + live chat"},
+  {id:"LBID",  gx:4,  gy:0, kind:"user",    tab:"user", label:"Bid INSIDE the video (Whatnot / eBay Live style)"},
+  {id:"EMPTY", gx:3,  gy:1, kind:"live",    tab:"live", label:"No stream: upcoming scheduled Lives + reminders"},
+
+  /* ---- HOME (row 3) ---- */
+  {id:"HOME",  gx:1,  gy:3, kind:"process", tab:"home", label:"HOME: auctions live now, ordered by closing time",
+    note:"First thing the user sees. Inherits today's home: featured hero + list by closing time"},
+  {id:"AUC",   gx:2,  gy:3, kind:"process", tab:"home", label:"Open an auction (parent): items, details, notes"},
+  {id:"ITEM",  gx:3,  gy:3, kind:"process", tab:"home", label:"Open an item / lot page"},
+  {id:"BID",   gx:4,  gy:3, kind:"user",    tab:"user", label:"Bid: Custom or Bid $X (no video)"},
+
+  /* ---- SEARCH (row 5) ---- */
+  {id:"SEARCH",gx:1,  gy:5, kind:"process", tab:"user", label:"SEARCH: global search + categories + filters",
+    note:"Absorbs 'Shop by category'. Different intent than Home: explore, not see what's live now"},
+  {id:"RESULT",gx:2,  gy:5, kind:"process", tab:"user", label:"Results → open an auction or item"},
+
+  /* ---- ACTIVITY (row 7) ---- */
+  {id:"ACT",   gx:1,  gy:7, kind:"activity",tab:"activity", label:"ACTIVITY: GLOBAL view of my bids and watched",
+    note:"Does NOT exist today. Raises 'what I bid on' and 'watched' from per-auction to global"},
+  {id:"MINE",  gx:2,  gy:7, kind:"activity",tab:"activity", label:"Winning / outbid / won + watching + reminders"},
+  {id:"BACK",  gx:3,  gy:7, kind:"process", tab:"activity", label:"Tap an item → back to its parent auction, in context"},
+
+  /* ---- PROFILE (row 9) ---- */
+  {id:"PROF",  gx:1,  gy:9, kind:"info",    tab:"info", label:"PROFILE: account + informational pages"},
+  {id:"ACCT",  gx:2,  gy:9, kind:"info",    tab:"info", label:"Details, password, payments, invoices, credits"},
+  {id:"PAGES", gx:3,  gy:9, kind:"info",    tab:"info", label:"Sell, Buyers, About, Blog, Help, Contact"}
+];
+
+/* Bottom bar branches: a single trunk from OPEN that fans out to the 5 tabs.
+   Each branch carries its tab label on its horizontal segment. */
+const BRANCHES = [
+  {to:"LIVE",   label:"Live"},
+  {to:"HOME",   label:"Home"},
+  {to:"SEARCH", label:"Search"},
+  {to:"ACT",    label:"Activity"},
+  {to:"PROF",   label:"Profile"}
+];
+
+const EDGES = [
+  /* Home */
+  {f:"HOME", t:"AUC",   fs:"r", ts:"l"},
+  {f:"AUC",  t:"ITEM",  fs:"r", ts:"l"},
+  {f:"ITEM", t:"BID",   fs:"r", ts:"l"},
+
+  /* Search */
+  {f:"SEARCH",t:"RESULT",fs:"r",ts:"l"},
+  {f:"RESULT",t:"AUC",  fs:"t", ts:"b", label:"opens"},
+
+  /* Live */
+  {f:"LIVE", t:"D_LIVE",fs:"r", ts:"l"},
+  {f:"D_LIVE",t:"STREAM",fs:"r",ts:"l", label:"Yes"},
+  {f:"STREAM",t:"LBID", fs:"r", ts:"l"},
+  {f:"D_LIVE",t:"EMPTY",fs:"b", ts:"l", label:"No"},
+
+  /* Activity */
+  {f:"ACT",  t:"MINE",  fs:"r", ts:"l"},
+  {f:"MINE", t:"BACK",  fs:"r", ts:"l"},
+
+  /* Profile */
+  {f:"PROF", t:"ACCT",  fs:"r", ts:"l"},
+  {f:"ACCT", t:"PAGES", fs:"r", ts:"l"}
+];
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+const COL=210, ROW=132, NW=176, NH=74, DW=190, DH=98, MX=58, MY=52;
+const GAP0=70; // extra gap between OPEN and the first column, for the bottom-bar bus
+const N = Object.fromEntries(NODES.map(n=>[n.id,n]));
+const MAXGX = Math.max(...NODES.map(n=>n.gx));
+const MAXGY = Math.max(...NODES.map(n=>n.gy));
+
+const xoff = n => (n.gx>=1 ? GAP0 : 0);
+const cx = n => MX + n.gx*COL + NW/2 + xoff(n);
+const cy = n => MY + n.gy*ROW + NH/2;
+const laneY = v => MY + v*ROW + NH/2;
+
+function port(n, side, off=0){
+  const x=cx(n), y=cy(n);
+  const dec = n.kind==="decision";
+  const hw=(dec?DW:NW)/2, hh=(dec?DH:NH)/2;
+  if(dec){
+    const k=1-Math.abs(off)/hw;
+    if(side==="t") return {x:x+off, y:y-hh*k};
+    if(side==="b") return {x:x+off, y:y+hh*k};
+    if(side==="l") return {x:x-hw,  y:y+off};
+    return {x:x+hw, y:y+off};
+  }
+  if(side==="t") return {x:x+off, y:y-hh};
+  if(side==="b") return {x:x+off, y:y+hh};
+  if(side==="l") return {x:x-hw,  y:y+off};
+  return {x:x+hw, y:y+off};
+}
+
+function routePts(e){
+  const a=N[e.f], b=N[e.t];
+  const p0=port(a,e.fs,e.fo||0), p1=port(b,e.ts,e.to||0);
+  const pts=[p0];
+  if(e.laneY!==undefined){
+    const ly=laneY(e.laneY);
+    if(e.fs==="l"||e.fs==="r"){
+      pts.push({x:p1.x,y:p0.y});
+      if(Math.abs(p0.y-ly)>1) pts.push({x:p1.x,y:ly});
+    } else {
+      pts.push({x:p0.x,y:ly},{x:p1.x,y:ly});
+    }
+  } else if(Math.abs(p0.y-p1.y)>1){
+    const mx=(p0.x+p1.x)/2;
+    pts.push({x:mx,y:p0.y},{x:mx,y:p1.y});
+  }
+  pts.push(p1);
+  return pts;
+}
+
+function pathD(pts,r=12){
+  let d=`M ${pts[0].x} ${pts[0].y}`;
+  for(let i=1;i<pts.length-1;i++){
+    const p=pts[i-1], c=pts[i], q=pts[i+1];
+    const d1=Math.hypot(c.x-p.x,c.y-p.y), d2=Math.hypot(q.x-c.x,q.y-c.y);
+    const rr=Math.min(r,d1/2,d2/2);
+    const a={x:c.x+(p.x-c.x)/d1*rr, y:c.y+(p.y-c.y)/d1*rr};
+    const b={x:c.x+(q.x-c.x)/d2*rr, y:c.y+(q.y-c.y)/d2*rr};
+    d+=` L ${a.x} ${a.y} Q ${c.x} ${c.y} ${b.x} ${b.y}`;
+  }
+  const l=pts[pts.length-1];
+  return d+` L ${l.x} ${l.y}`;
+}
+
+function wrap(text,max){
+  const w=text.split(" "), lines=[]; let cur="";
+  for(const word of w){
+    if((cur+" "+word).trim().length>max){ if(cur) lines.push(cur); cur=word; }
+    else cur=(cur+" "+word).trim();
+  }
+  if(cur) lines.push(cur);
+  return lines;
+}
+
+const STYLE = {
+  start:   {s:"var(--ink)",      f:"var(--ink)",         t:"#fff"},
+  end:     {s:"var(--ink)",      f:"var(--ink)",         t:"#fff"},
+  process: {s:"var(--home)",     f:"var(--home-bg)",     t:"var(--home)"},
+  decision:{s:"var(--decision)", f:"var(--decision-bg)", t:"var(--decision)"},
+  success: {s:"var(--activity)", f:"var(--activity-bg)", t:"var(--activity)"},
+  live:    {s:"var(--live)",     f:"var(--live-bg)",     t:"var(--live)"},
+  activity:{s:"var(--activity)", f:"var(--activity-bg)", t:"var(--activity)"},
+  info:    {s:"var(--info)",     f:"var(--info-bg)",     t:"var(--info)"},
+  user:    {s:"var(--user)",     f:"var(--user-bg)",     t:"var(--user)"}
+};
+function nodeStyle(n){ return STYLE[n.kind==="process" && n.tab==="user" ? "user" : n.kind]; }
+
+const NOTE_W=206, NOTE_GAP=12;
+
+function render(){
+  const W = MX*2 + MAXGX*COL + NW + GAP0;
+  const H = MY*2 + MAXGY*ROW + NH;
+  const svg = document.getElementById("flow");
+  svg.setAttribute("width", W); svg.setAttribute("height", H);
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+
+  let out = `<defs>
+    <marker id="ar" markerWidth="9" markerHeight="9" refX="7.4" refY="3.2" orient="auto">
+      <path d="M0,0 L7.4,3.2 L0,6.4 z" fill="#5A5C6B"/></marker>
+    <marker id="arf" markerWidth="9" markerHeight="9" refX="7.4" refY="3.2" orient="auto">
+      <path d="M0,0 L7.4,3.2 L0,6.4 z" fill="#B98526"/></marker>
+  </defs>`;
+
+  /* --- Bottom bar: one trunk that fans out --- */
+  const openN = N["OPEN"];
+  const p0 = port(openN, "r");
+  const busX = p0.x + 30;                 // vertical bus justo después de OPEN
+  const targets = BRANCHES.map(b=>({b, n:N[b.to], p:port(N[b.to],"l")}));
+  const ys = targets.map(t=>t.p.y);
+  const busTop = Math.min(...ys), busBot = Math.max(...ys);
+  const bcol = "#5A5C6B";
+  // trunk from OPEN to the bus
+  out += `<path d="M ${p0.x} ${p0.y} L ${busX} ${p0.y}" fill="none" stroke="${bcol}" stroke-width="1.6"/>`;
+  // vertical bus
+  out += `<line x1="${busX}" y1="${busTop}" x2="${busX}" y2="${busBot}" stroke="${bcol}" stroke-width="1.6"/>`;
+  // junction node where the bus starts
+  out += `<circle cx="${busX}" cy="${p0.y}" r="3.2" fill="${bcol}"/>`;
+  // horizontal branches with the label centered above the segment
+  targets.forEach(t=>{
+    out += `<path d="${pathD([{x:busX,y:t.p.y},{x:t.p.x,y:t.p.y}])}" fill="none"
+             stroke="${bcol}" stroke-width="1.6" marker-end="url(#ar)"/>`;
+    const lx=(busX+t.p.x)/2, ly=t.p.y-11;
+    out += `<text x="${lx}" y="${ly}" text-anchor="middle"
+             font-family="'Figtree',sans-serif" font-size="11.5" font-weight="700"
+             fill="${bcol}" paint-order="stroke" stroke="#fff" stroke-width="4">${t.b.label}</text>`;
+  });
+
+  /* edges */
+  EDGES.forEach(e=>{
+    const pts=routePts(e);
+    const col = e.dashed ? "#A6741C" : "#5A5C6B";
+    out += `<path d="${pathD(pts)}" fill="none" stroke="${col}" stroke-width="1.6"
+             ${e.dashed?'stroke-dasharray="5 4"':''} marker-end="url(#${e.dashed?'arf':'ar'})"/>`;
+    if(e.label){
+      const p0=pts[0], p1=pts[1]||pts[0];
+      let lx=(p0.x+p1.x)/2, ly=(p0.y+p1.y)/2;
+      if(Math.abs(p0.y-p1.y)<2){ ly-=9; }              // horizontal segment: lift
+      else if(Math.abs(p0.x-p1.x)<2){ lx-=16; }        // vertical segment: to the left
+      else { lx+=e.label.length>4?40:16; }
+      out += `<text x="${lx}" y="${ly}" text-anchor="middle"
+               font-family="'Figtree',sans-serif" font-size="10.5" font-weight="600"
+               fill="${col}" paint-order="stroke" stroke="#fff" stroke-width="3.5">${e.label}</text>`;
+    }
+  });
+
+  /* notes */
+  NODES.filter(n=>n.note).forEach(n=>{
+    const x=cx(n), top=cy(n)-NH/2;
+    const lines = wrap(n.note, 38);
+    const h = lines.length*11.6 + 15;
+    const by=top-NOTE_GAP, ty=by-h;
+    out += `<line x1="${x}" y1="${by}" x2="${x}" y2="${top}" stroke="#A9B0BA"
+             stroke-width="1.2" stroke-dasharray="2 3"/>`;
+    out += `<rect x="${x-NOTE_W/2}" y="${ty}" width="${NOTE_W}" height="${h}" rx="5"
+             fill="#F1F3F6" stroke="#C2C8D1" stroke-width="1"/>`;
+    const y0 = ty + h/2 - (lines.length-1)*5.8 + 3.2;
+    lines.forEach((L,j)=>{
+      out += `<text x="${x}" y="${y0+j*11.6}" text-anchor="middle"
+               font-family="'Figtree',sans-serif" font-size="9.7" font-weight="500"
+               fill="#4A505B">${L}</text>`;
+    });
+  });
+
+  /* nodes */
+  NODES.forEach(n=>{
+    const st=nodeStyle(n), x=cx(n), y=cy(n);
+    const dec = n.kind==="decision";
+    let shape;
+    if(dec){
+      shape = `<polygon points="${x},${y-DH/2} ${x+DW/2},${y} ${x},${y+DH/2} ${x-DW/2},${y}"
+                fill="${st.f}" stroke="${st.s}" stroke-width="1.6"/>`;
+    } else {
+      const r = (n.kind==="start"||n.kind==="end") ? NH/2 : 6;
+      shape = `<rect x="${x-NW/2}" y="${y-NH/2}" width="${NW}" height="${NH}" rx="${r}"
+                fill="${st.f}" stroke="${st.s}" stroke-width="1.6"/>`;
+    }
+    const max = dec ? 20 : 26;
+    const lines = wrap(n.label,max);
+    const fs = lines.length>3 ? 10.6 : 11.4;
+    const y0 = y - (lines.length-1)*(fs+2.2)/2 + fs*0.34;
+    let txt="";
+    lines.forEach((L,j)=>{
+      txt += `<text x="${x}" y="${y0+j*(fs+2.2)}" text-anchor="middle"
+               font-family="'Figtree',sans-serif" font-size="${fs}" font-weight="600"
+               fill="${st.t}">${L}</text>`;
+    });
+    out += `<g>${shape}${txt}</g>`;
+  });
+
+  svg.innerHTML = out;
+}
+
+function legend(){
+  const items=[
+    ["Home / system","var(--home)","var(--home-bg)","sw"],
+    ["User action","var(--user)","var(--user-bg)","sw"],
+    ["Decision","var(--decision)","var(--decision-bg)","sw dia"],
+    ["Live / stream","var(--live)","var(--live-bg)","sw"],
+    ["Activity / my bids","var(--activity)","var(--activity-bg)","sw"],
+    ["Informational pages","var(--info)","var(--info-bg)","sw"],
+    ["When a Live starts","#A6741C","#FBF3E1","sw dash"]
+  ];
+  document.getElementById("legend").innerHTML = items.map(([l,s,f,c])=>
+    `<i><span class="${c}" style="border-color:${s};background:${f}"></span>${l}</i>`).join("");
+}
+
+legend(); render();
+</script>
+</body>
+</html>
